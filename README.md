@@ -31,7 +31,7 @@
 
 Micropython Getting Started
 
-In m5stack.py aleay init timer 0 as EXTBASE, lcd pwm use timer 1, speak use timer 2, 8 
+In m5stack.py already init timer 0 as EXTBASE, lcd pwm use timer 1, speak use timer 2, 8 
 ```python
 import m5stack
 ```
