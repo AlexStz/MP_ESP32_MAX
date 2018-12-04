@@ -70,7 +70,7 @@ extern QueueHandle_t ftp_mutex;
 extern int ftp_buff_size;
 extern int ftp_timeout;
 
-void ftp_init (void);
+bool ftp_init (void);
 void ftp_deinit (void);
 int ftp_run (uint32_t elapsed);
 bool ftp_enable (void);
@@ -79,6 +79,7 @@ bool ftp_disable (void);
 bool ftp_reset (void);
 int ftp_getstate();
 bool ftp_terminate (void);
+bool ftp_stop_requested();
 int32_t ftp_get_maxstack (void);
 
 #endif

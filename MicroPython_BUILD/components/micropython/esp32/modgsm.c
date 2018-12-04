@@ -32,7 +32,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "tcpip_adapter.h"
+
 #include "py/runtime.h"
+#include "py/obj.h"
+#include "netutils.h"
+#include "mphalport.h"
 #include "libs/libGSM.h"
 
 //-------------------------------------------------------------------------------------------------
@@ -49,6 +54,7 @@ STATIC mp_obj_t mod_gsm_startGSM(mp_uint_t n_args, const mp_obj_t *pos_args, mp_
 			{ MP_QSTR_wait,	                          MP_ARG_KW_ONLY  | MP_ARG_BOOL, {.u_bool = false} },
 			{ MP_QSTR_rts,		                      MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int = -1} },
 			{ MP_QSTR_cts,		                      MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int = -1} },
+            { MP_QSTR_roaming,                        MP_ARG_KW_ONLY  | MP_ARG_BOOL, {.u_bool = false} },
 	};
 	mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -81,10 +87,8 @@ STATIC mp_obj_t mod_gsm_startGSM(mp_uint_t n_args, const mp_obj_t *pos_args, mp_
     	err = -11;
     	goto exit;
     }
-    uint8_t wait = args[7].u_bool;
-    if (args[6].u_bool == false) wait = 0;
 
-    int res = ppposInit(tx, rx, args[8].u_int, args[9].u_int, bdr, user, pass, apn, args[7].u_bool, args[6].u_bool);
+    int res = ppposInit(tx, rx, args[8].u_int, args[9].u_int, bdr, user, pass, apn, args[7].u_bool, args[6].u_bool, args[10].u_bool);
 
     if (res == 0) return mp_const_true;
 
@@ -97,9 +101,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_gsm_startGSM_obj, 0, mod_gsm_startGSM);
 //-------------------------------
 STATIC mp_obj_t mod_gsm_stopGSM()
 {
-    ppposDisconnect(1, 0);
-
-	return mp_const_none;
+    if (ppposDisconnect(1, 0) == 0) return mp_const_true;
+	return mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_gsm_stopGSM_obj, mod_gsm_stopGSM);
 
@@ -108,7 +111,7 @@ STATIC mp_obj_t mod_gsm_stateGSM()
 {
 	mp_obj_t tuple[2];
 	char state[20] = {'\0'};
-	int gsm_state = ppposStatus();
+	int gsm_state = ppposStatus(NULL, NULL, NULL);
 
 	tuple[0] = mp_obj_new_int(gsm_state);
 
@@ -117,15 +120,32 @@ STATIC mp_obj_t mod_gsm_stateGSM()
 	else if (gsm_state == GSM_STATE_IDLE) sprintf(state, "Idle");
 	else if (gsm_state == GSM_STATE_FIRSTINIT) sprintf(state, "Not started");
 	else sprintf(state, "Unknown");
-	tuple[1] = mp_obj_new_str(state, strlen(state), false);
+	tuple[1] = mp_obj_new_str(state, strlen(state));
 
 	return mp_obj_new_tuple(2, tuple);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_gsm_stateGSM_obj, mod_gsm_stateGSM);
 
+//--------------------------------
+STATIC mp_obj_t mod_gsm_ifconfig()
+{
+    uint32_t ip, netmask, gw;
+    ppposStatus(&ip, &netmask, &gw);
+
+    mp_obj_t tuple[3] = {
+        (mp_obj_t)netutils_format_ipv4_addr((uint8_t*)&ip, NETUTILS_BIG),
+        (mp_obj_t)netutils_format_ipv4_addr((uint8_t*)&netmask, NETUTILS_BIG),
+        (mp_obj_t)netutils_format_ipv4_addr((uint8_t*)&gw, NETUTILS_BIG)
+    };
+    // Return tuple: (ip, netmask, gateway)
+    return mp_obj_new_tuple(3, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_gsm_ifconfig_obj, mod_gsm_ifconfig);
+
 //--------------------------------------
 STATIC mp_obj_t mod_gsm_connectGSM()
 {
+    mp_hal_reset_wdt();
     int res = ppposConnect();
 
     if (res == 0) return mp_const_true;
@@ -143,9 +163,8 @@ STATIC mp_obj_t mod_gsm_disconnectGSM(mp_uint_t n_args, const mp_obj_t *pos_args
 	mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    ppposDisconnect(args[0].u_bool, args[1].u_bool);
-
-	return mp_const_none;
+    if (ppposDisconnect(args[0].u_bool, args[1].u_bool) == 0) return mp_const_true;
+	return mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_gsm_disconnectGSM_obj, 0, mod_gsm_disconnectGSM);
 
@@ -219,7 +238,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_gsm_deleteSMS_obj, mod_gsm_deleteSMS);
 STATIC mp_obj_t mod_gsm_readSMS(size_t n_args, const mp_obj_t *args)
 {
     mp_obj_t msg = mp_const_none;
-	SMS_indexes indexes;
 	SMS_Msg smsmsg;
 	int idx = mp_obj_get_int(args[0]);
 	int delsms = 0;
@@ -229,14 +247,14 @@ STATIC mp_obj_t mod_gsm_readSMS(size_t n_args, const mp_obj_t *args)
 	if (nmsg > 0) {
 		mp_obj_t sms_tuple[7];
 		sms_tuple[0] = mp_obj_new_int(smsmsg.idx);
-		sms_tuple[1] = mp_obj_new_str(smsmsg.stat, strlen(smsmsg.stat), false);
-		sms_tuple[2] = mp_obj_new_str(smsmsg.from, strlen(smsmsg.from), false);
-		sms_tuple[3] = mp_obj_new_str(smsmsg.time, strlen(smsmsg.time), false);
+		sms_tuple[1] = mp_obj_new_str(smsmsg.stat, strlen(smsmsg.stat));
+		sms_tuple[2] = mp_obj_new_str(smsmsg.from, strlen(smsmsg.from));
+		sms_tuple[3] = mp_obj_new_str(smsmsg.time, strlen(smsmsg.time));
 		sms_tuple[4] = mp_obj_new_int(smsmsg.time_value);
 		sms_tuple[5] = mp_obj_new_int(smsmsg.tz);
 
 		if (smsmsg.msg) {
-			sms_tuple[6] = mp_obj_new_str(smsmsg.msg, strlen(smsmsg.msg), false);
+			sms_tuple[6] = mp_obj_new_str(smsmsg.msg, strlen(smsmsg.msg));
 			free(smsmsg.msg);
 		}
 		else sms_tuple[6] = mp_const_none;
@@ -329,7 +347,7 @@ STATIC mp_obj_t mod_gsm_atCmd(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map
     char **pbuffer = &buffer;
     int res = at_Cmd(atcmd, resp, pbuffer, 1024, tmo, cmddata);
     if (res == 0) {
-        mp_obj_t response = mp_obj_new_str("", 0, false);
+        mp_obj_t response = mp_obj_new_str("", 0);
     	free(*pbuffer);
         return response;
     }
@@ -341,7 +359,7 @@ STATIC mp_obj_t mod_gsm_atCmd(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map
     		}
     	}
     }
-    mp_obj_t response = mp_obj_new_str(buffer, strlen(buffer), false);
+    mp_obj_t response = mp_obj_new_str(buffer, strlen(buffer));
 	free(*pbuffer);
     return response;
 }
@@ -353,6 +371,7 @@ STATIC const mp_rom_map_elem_t gsm_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_start),		MP_ROM_PTR(&mod_gsm_startGSM_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop),		MP_ROM_PTR(&mod_gsm_stopGSM_obj) },
     { MP_ROM_QSTR(MP_QSTR_status),		MP_ROM_PTR(&mod_gsm_stateGSM_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ifconfig),    MP_ROM_PTR(&mod_gsm_ifconfig_obj) },
     { MP_ROM_QSTR(MP_QSTR_disconnect),	MP_ROM_PTR(&mod_gsm_disconnectGSM_obj) },
     { MP_ROM_QSTR(MP_QSTR_connect),		MP_ROM_PTR(&mod_gsm_connectGSM_obj) },
     { MP_ROM_QSTR(MP_QSTR_sendSMS),		MP_ROM_PTR(&mod_gsm_sendSMS_obj) },

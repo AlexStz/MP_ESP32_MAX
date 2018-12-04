@@ -280,8 +280,8 @@ static int ldht_compute_data11( uint8_t *data, double *temp, double *humi )
 //-------------------------------------------------------------------------
 static int ldht_compute_data2x( uint8_t *data, double *temp, double *humi )
 {
-  *humi = (uint16_t)((data[0] * 256 + data[1])) / 10;
-  *temp = (uint16_t)(((data[2] & 0x7f) * 256 + data[3])) / 10;
+  *humi = (double)((data[0] * 256 + data[1])) / 10;
+  *temp = (double)(((data[2] & 0x7f) * 256 + data[3])) / 10;
 
   if (data[2] & 0x80)
     *temp = - *temp;
@@ -329,7 +329,7 @@ mp_obj_t machine_dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
     uint8_t pin;
     uint8_t dht_type = args[ARG_type].u_int;
 
-    pin = machine_pin_get_id(args[ARG_pin].u_obj);
+    pin = machine_pin_get_gpio(args[ARG_pin].u_obj);
 
     // Setup the DHT object
     machine_dht_obj_t *self = m_new_obj(machine_dht_obj_t );

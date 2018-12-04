@@ -32,8 +32,18 @@
 #ifndef _TFT_H_
 #define _TFT_H_
 
+#include "sdkconfig.h"
+
+#ifdef CONFIG_MICROPY_USE_TFT
+
 #include <stdlib.h>
 #include "tftspi.h"
+#include "py/obj.h"
+
+#define TFT_MODE_TFT    0
+#define TFT_MODE_EPD    1
+#define TFT_MODE_EVE    2
+
 
 typedef struct {
 	uint16_t        x1;
@@ -54,10 +64,24 @@ typedef struct {
 	color_t     color;
 } Font;
 
+typedef struct _tft_eve_obj_t {
+    mp_obj_base_t base;
+    uint32_t    addr;
+    uint32_t    size;
+    uint16_t    width;
+    uint16_t    height;
+    uint16_t    rowsize;
+    uint8_t     type;
+    uint8_t     byte_per_pixel;
+    uint8_t     prev_tft_mode;
+    uint8_t     loaded;
+} tft_eve_obj_t;
+
 
 //==========================================================================================
 // ==== Global variables ===================================================================
 //==========================================================================================
+
 extern uint8_t   orientation;		// current screen orientation
 extern uint16_t  font_rotate;   	// current font font_rotate angle (0~395)
 extern uint8_t   font_transparent;	// if not 0 draw fonts transparent
@@ -67,6 +91,7 @@ extern uint8_t   font_line_space;	// additional spacing between text lines; adde
 extern uint8_t   text_wrap;         // if not 0 wrap long text to the new line, else clip
 extern color_t   _fg;            	// current foreground color for fonts
 extern color_t   _bg;            	// current background for non transparent fonts
+extern uint8_t   font_now;
 extern dispWin_t dispWin;			// display clip window
 extern float	  _angleOffset;		// angle offset for arc, polygon and line by angle functions
 extern uint8_t	  image_debug;		// print debug messages during image decode if set to 1
@@ -75,9 +100,18 @@ extern Font cfont;					// Current font structure
 
 extern int	TFT_X;					// X position of the next character after TFT_print() function
 extern int	TFT_Y;					// Y position of the next character after TFT_print() function
+extern uint16_t image_width;
+extern uint16_t image_hight;
 
 extern uint32_t tp_calx;			// touch screen X calibration constant
 extern uint32_t tp_caly;			// touch screen Y calibration constant
+
+extern uint8_t tft_active_mode;     // used tft driver mode (TFT, EPD or EVE)
+
+#if CONFIG_MICROPY_USE_EVE
+extern tft_eve_obj_t *eve_tft_obj;
+#endif
+
 // =========================================================================================
 
 
@@ -204,6 +238,7 @@ void TFT_drawPixel(int16_t x, int16_t y, color_t color, uint8_t sel);
 */
 //------------------------------------------
 color_t TFT_readPixel(int16_t x, int16_t y);
+
 
 /*
  * Draw vertical line at given x,y coordinates
@@ -628,6 +663,7 @@ int TFT_getStringWidth(char* str);
 /*
  * Fills the rectangle occupied by string with current background color
  */
+//------------------------------------------------
 void TFT_clearStringRect(int x, int y, char *str);
 
 /*
@@ -722,5 +758,11 @@ int compile_font_file(char *fontfile, uint8_t dbg);
  * Get all font's characters to buffer
  */
 void getFontCharacters(uint8_t *buf);
+
+
+void led_pwm_init();
+void led_setBrightness(int duty);
+
+#endif
 
 #endif

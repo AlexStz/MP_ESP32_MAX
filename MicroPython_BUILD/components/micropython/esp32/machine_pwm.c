@@ -32,7 +32,7 @@
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "modmachine.h"
-#include "machine_pin.h"
+#include "modmachine.h"
 #include "mphalport.h"
 
 // High speed mode
@@ -41,13 +41,13 @@
 // Forward dec'l
 extern const mp_obj_type_t machine_pwm_type;
 
-typedef struct _esp32_pwm_obj_t {
-    mp_obj_base_t base;
-    gpio_num_t pin;
-    uint8_t active;
-    uint8_t channel;
-    uint8_t timer;
-} esp32_pwm_obj_t;
+// typedef struct _esp32_pwm_obj_t {
+//     mp_obj_base_t base;
+//     gpio_num_t pin;
+//     uint8_t active;
+//     uint8_t channel;
+//     uint8_t timer;
+// } esp32_pwm_obj_t;
 
 STATIC esp32_pwm_obj_t *pwm_channels[LEDC_CHANNEL_MAX];
 STATIC ledc_timer_config_t pwm_timers[LEDC_CHANNEL_MAX/2];
@@ -175,7 +175,7 @@ STATIC void esp32_pwm_init_helper(esp32_pwm_obj_t *self, size_t n_args, const mp
 
     if (self->channel >= LEDC_CHANNEL_MAX) {
 		// === New PWM assignment
-        if (timer < 0) timer = 0;
+        if (timer < 0) timer = 1;
         if (timer > 3) {
     		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "wrong timer requested: %d (0~3 allowed)", timer));
         }
