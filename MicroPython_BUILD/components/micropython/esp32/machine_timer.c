@@ -54,25 +54,9 @@
 #define TIMER_FLAGS			0
 
 
-typedef struct _machine_timer_obj_t {
-    mp_obj_base_t base;
-    uint8_t id;
-    uint8_t state;
-    uint8_t type;
-    int8_t debug_pin;
-    mp_uint_t repeat;
-    mp_uint_t period;
-    uint64_t event_num;
-    uint64_t cb_num;
-    mp_obj_t callback;
-    intr_handle_t handle;
-    uint64_t counter;
-    uint64_t alarm;
-} machine_timer_obj_t;
-
 const mp_obj_type_t machine_timer_type;
 
-static machine_timer_obj_t * timers_used[4] = {NULL};
+machine_timer_obj_t * mpy_timers_used[4] = {NULL};
 static machine_timer_obj_t * ext_timers[TIMER_EXT_NUM] = {NULL};
 
 
@@ -161,14 +145,17 @@ STATIC mp_obj_t machine_timer_make_new(const mp_obj_type_t *type, size_t n_args,
     }
     if (tmr < 4) {
     	// Base hardware timer
-        if (timers_used[tmr] != NULL) {
+    	if ((tmr == ADC_TIMER_NUM) && (adc_timer_active)) {
+        	mp_raise_ValueError("Timer used by ADC module.");
+    	}
+        if (mpy_timers_used[tmr] != NULL) {
         	mp_raise_ValueError("Timer already in use.");
         }
-        timers_used[tmr] = self;
+        mpy_timers_used[tmr] = self;
     }
     else {
     	// Extended timer
-    	if ((timers_used[0] == NULL) || (timers_used[0]->type != TIMER_TYPE_EXTBASE)) {
+    	if ((mpy_timers_used[0] == NULL) || (mpy_timers_used[0]->type != TIMER_TYPE_EXTBASE)) {
 			mp_raise_ValueError("Timer 0 not configured as extended timer.");
     	}
     	if (ext_timers[(tmr-4)] != NULL) {
@@ -187,7 +174,7 @@ STATIC void machine_timer_disable(machine_timer_obj_t *self)
     if ((self->id < 4) && (self->handle)) {
         timer_pause((self->id >> 1) & 1, self->id & 1);
         if (self->type != TIMER_TYPE_CHRONO) esp_intr_free(self->handle);
-        timers_used[self->id] = NULL;
+        mpy_timers_used[self->id] = NULL;
     }
     else ext_timers[(self->id-4)] = NULL;
     self->callback = NULL;
@@ -215,7 +202,10 @@ STATIC void machine_timer_isr(void *self_in)
     	TIMERG0.hw_timer[self->id & 1].config.alarm_en = self->repeat;
     }
 
-    if (self->debug_pin >= 0) gpio_set_level(self->debug_pin, (self->event_num & 1));
+    if (self->debug_pin >= 0) {
+    	if (self->debug_pin_mode >= 0) gpio_set_level(self->debug_pin, (self->debug_pin_mode & 1));
+    	else gpio_set_level(self->debug_pin, (self->event_num & 1));
+    }
     self->event_num++;
 
     if ((self->callback) && (mp_sched_schedule(self->callback, self, NULL))) self->cb_num++;
@@ -302,7 +292,7 @@ STATIC void machine_timer_enable(machine_timer_obj_t *self)
 		}
     	check_esp_err(timer_start((self->id >> 1) & 1, self->id & 1));
     }
-    timers_used[self->id] = self;
+    mpy_timers_used[self->id] = self;
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------
@@ -313,6 +303,7 @@ STATIC mp_obj_t machine_timer_init_helper(machine_timer_obj_t *self, mp_uint_t n
         { MP_QSTR_mode,         MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = TIMER_TYPE_PERIODIC} },
         { MP_QSTR_callback,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_dbgpin,       MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_dbgpinmode,   MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
     };
 
     machine_timer_disable(self);
@@ -355,6 +346,7 @@ STATIC mp_obj_t machine_timer_init_helper(machine_timer_obj_t *self, mp_uint_t n
 			// set the debug gpio if used
 			if ((args[3].u_int >= 0) && (args[3].u_int < 34)) {
 				self->debug_pin = args[3].u_int;
+				self->debug_pin_mode = args[4].u_int;
 				gpio_pad_select_gpio(self->debug_pin);
 				gpio_set_direction(self->debug_pin, GPIO_MODE_OUTPUT);
 				gpio_set_level(self->debug_pin, 0);
@@ -476,7 +468,7 @@ STATIC mp_obj_t machine_timer_resume(mp_obj_t self_in)
 		}
     }
     else {
-		if ((timers_used[0] != NULL) && (timers_used[0]->state == TIMER_RUNNING)) self->state = TIMER_RUNNING;
+		if ((mpy_timers_used[0] != NULL) && (mpy_timers_used[0]->state == TIMER_RUNNING)) self->state = TIMER_RUNNING;
 		else self->state = TIMER_PAUSED;
     }
     return mp_const_none;
@@ -664,7 +656,7 @@ STATIC const mp_map_elem_t machine_timer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_init),		(mp_obj_t)&machine_timer_init_obj },
     { MP_ROM_QSTR(MP_QSTR_value),		(mp_obj_t)&machine_timer_value_obj },
     { MP_ROM_QSTR(MP_QSTR_events),		(mp_obj_t)&machine_timer_events_obj },
-    { MP_ROM_QSTR(MP_QSTR_reshot),		(mp_obj_t)&machine_timer_shot_obj },
+    { MP_ROM_QSTR(MP_QSTR_reshoot),		(mp_obj_t)&machine_timer_shot_obj },
     { MP_ROM_QSTR(MP_QSTR_start),		(mp_obj_t)&machine_timer_start_obj },
     { MP_ROM_QSTR(MP_QSTR_stop),		(mp_obj_t)&machine_timer_pause_obj },
     { MP_ROM_QSTR(MP_QSTR_pause),		(mp_obj_t)&machine_timer_pause_obj },

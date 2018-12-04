@@ -52,3 +52,6 @@ xtensa-esp32-elf/
 xtensa-esp32-elf_psram/
 
 backup.sh
+
+
+\.vscode/

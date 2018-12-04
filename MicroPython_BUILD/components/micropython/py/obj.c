@@ -4,6 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2018 LoBo (https://github.com/loboris)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -242,9 +243,10 @@ mp_int_t mp_obj_get_int(mp_const_obj_t arg) {
                 "can't convert %s to int", mp_obj_get_type_str(arg)));
         }
     }
+    return 0;
 }
 
-uint64_t mp_obj_get_int64(mp_const_obj_t arg) {
+int64_t mp_obj_get_int64(mp_const_obj_t arg) {
     // This function essentially performs implicit type conversion to int64
     // Note that Python does NOT provide implicit type conversion from
     // float to int in the core expression language, try some_list[1.0].
@@ -264,6 +266,7 @@ uint64_t mp_obj_get_int64(mp_const_obj_t arg) {
                 "can't convert %s to int", mp_obj_get_type_str(arg)));
         }
     }
+    return 0;
 }
 
 mp_int_t mp_obj_get_int_truncated(mp_const_obj_t arg) {
