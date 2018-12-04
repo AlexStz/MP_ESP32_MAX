@@ -1,156 +1,383 @@
-# MicroPython for ESP32
+# M5Stack Micropython Base [Lobo MicroPython](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/)
 
-# with support for 4MB of psRAM
+## Getting Start
 
-<br>
+- See LoBo MicroPython [WiKi](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki)
 
-> This repository can be used to build MicroPython for ESP32 boards/modules with **psRAM** as well as for ESP32 boards/modules **without psRAM.**<br><br>
-> *Building on* **Linux**, **MacOS** *and* **Windows** (including **Linux Subsystem on Windows 10**) *is supported*.<br><br>
-> MicroPython works great on ESP32, but the most serious issue is still (as on most other MicroPython boards) limited amount of free memory.<br>
-> This repository contains all the tools and sources necessary to **build working MicroPython firmware** which can fully use the advantages of **4MB** (or more) of **psRAM**.<br>
-> It is **huge difference** between MicroPython running with **less than 100KB** of free memory and running with **4MB** of free memory.
+## Upload code
+- Use [Ampy](https://github.com/adafruit/ampy)
+- Use [Lobo Miropython filesystems](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki/filesystems)
 
-<br>
-
-ESP32 can use external **SPIRAM** (psRAM) to expand available RAM up to 16MB.
-
-Currently, there are several modules & development boards which incorporates **4MB** of psRAM:<br>
-
-* [**M5Stack**](http://www.m5stack.com) _Development Kit_ [version with psRAM](https://www.aliexpress.com/store/product/M5Stack-NEWEST-4M-PSRAM-ESP32-Development-Board-with-MPU9250-9DOF-Sensor-Color-LCD-for-Arduino-Micropython/3226069_32847906756.html?spm=2114.12010608.0.0.1ba0ee41gOPji)
-* **TTGO T8 V1.1** _board_, available at [eBay](https://www.ebay.com/itm/TTGO-T8-V1-1-ESP32-4MB-PSRAM-TF-CARD-3D-ANTENNA-WiFi-bluetooth/152891206854?hash=item239906acc6:g:7QkAAOSwMfhadD85)
-* **ESP-WROVER-KIT** _boards_ from Espressif, available from [ElectroDragon](http://www.electrodragon.com/product/esp32-wrover-kit/), [AnalogLamb](https://www.analoglamb.com/product/esp-wrover-kit-esp32-wrover-module/), ...
-* **WiPy 3.0** _board_ from [Pycom](https://pycom.io/product/wipy-3/).
-* **TTGO TAudio** _board_ ([eBay](https://www.ebay.com/itm/TTGO-TAudio-V1-0-ESP32-WROVER-SD-Card-Slot-Bluetooth-WI-FI-Module-MPU9250/152835010520?hash=item2395ad2fd8:g:Jt8AAOSwR2RaOdEp))
-* **Lolin32 Pro** _board_ from [Wemos](https://wiki.wemos.cc/products:lolin32:lolin32_pro) - **`no longer available`** ([Schematic](https://wiki.wemos.cc/_media/products:lolin32:sch_lolin32_pro_v1.0.0.pdf)).
-* **ESP-WROVER** _module_ from Espressif, available from [ElectroDragon](http://www.electrodragon.com/product/esp32-wrover-v4-module-based-esp32/) and many other vendors.
-* **ALB32-WROVER** _module_ (4 MB SPIRAM & 4/8/16 MB Flash) from [AnalogLamb](https://www.analoglamb.com/product/alb32-wrover-esp32-module-with-64mb-flash-and-32mb-psram/).
-* **S01**, **L01** and **G01** _OEM modules_ from [Pycom](https://pycom.io/webshop#oem-products).
-
----
-
-[Wiki pages](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki) with detailed documentation specific to this **MicroPython** port are available.
-
-Some examples can be found in [modules_examples](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/tree/master/MicroPython_BUILD/components/micropython/esp32/modules_examples) directory.
-
----
-
-This repository contains all the tools and sources necessary to **build working MicroPython firmware** which can fully use the advantages of **4MB** (or more) of **psRAM**
-
-It is **huge difference** between MicroPython running with **less than 100KB** of free memory and running with **4MB** of free memory.
-
----
-
-## **The MicroPython firmware is built as esp-idf component**
-
-This means the regular esp-idf **menuconfig** system can be used for configuration. Besides the ESP32 configuration itself, many MicroPython options can also be configured via **menuconfig**.
-
-This way many features not available in standard ESP32 MicroPython are enabled, like unicore/dualcore, all Flash speed/mode options etc. No manual *sdkconfig.h* editing and tweaking is necessary.
-
----
-
-### Features
-
-* MicroPython core based on latest build from [main Micropython repository](https://github.com/micropython/micropython)
-* added changes needed to build for ESP32 with psRAM
-* Default configuration has **2MB** of MicroPython heap, **20KB** of MicroPython stack, **~200KB** of free DRAM heap for C modules and functions
-* MicroPython can be built in **unicore** (FreeRTOS & MicroPython task running only on the first ESP32 core, or **dualcore** configuration (MicroPython task running on ESP32 **App** core)
-* ESP32 Flash can be configured in any mode, **QIO**, **QOUT**, **DIO**, **DOUT**
-* **BUILD.sh** script is provided to make **building** MicroPython firmware as **easy** as possible
-* Internal Fat filesystem is built with esp-idf **wear leveling** driver, so there is less danger of damaging the flash with frequent writes.
-* **SPIFFS** filesystem is supported and can be used instead of FatFS in SPI Flash. Configurable via **menuconfig**
-* Flexible automatic and/or manual filesystem configuration
-* **sdcard** support is included which uses esp-idf **sdmmc** driver and can work in **SD mode** (*1-bit* and *4-bit*) or in **SPI mode** (sd card can be connected to any pins). For imformation on how to connect sdcard see the documentation.
-* Files **timestamp** is correctly set to system time both on internal fat filesysten and on sdcard
-* **Native ESP32 VFS** support for spi Flash & sdcard filesystems.
-* **RTC Class** is added to machine module, including methods for synchronization of system time to **ntp** server, **deepsleep**, **wakeup** from deepsleep **on external pin** level, ...
-* **Time zone** can be configured via **menuconfig** and is used when syncronizing time from NTP server
-* Built-in **ymodem module** for fast transfer of text/binary files to/from host
-* Some additional frozen modules are added, like **pye** editor, **urequests**, **functools**, **logging**, ...
-* **Btree** module included, can be Enabled/Disabled via **menuconfig**
-* **_threads** module greatly improved, inter-thread **notifications** and **messaging** included
-* **Neopixel** module using ESP32 **RMT** peripheral with many new features
-* **DHT** module implemented using ESP32 RMT peripheral
-* **1-wire** module implemented using ESP32 RMT peripheral
-* **i2c** module uses ESP32 hardware i2c driver
-* **spi** module uses ESP32 hardware spi driver
-* **adc** module improved, new functions added
-* **pwm** module, ESP32 hardware based
-* **timer** module improved, new timer types and features
-* **curl** module added, many client protocols including FTP and eMAIL
-* **ssh** module added with sftp/scp support and _exec_ function to execute program on server
-* **display** module added with full support for spi TFT displays
-* **mqtt** module added, implemented in C, runs in separate task
-* **mDNS** module added, implemented in C, runs in separate task
-* **telnet** module added, connect to **REPL via WiFi** using telnet protocol
-* **ftp** server module added, runs as separate ESP32 task
-* **GSM/PPPoS** support, connect to the Internet via GSM module
-* **OTA Update** supported, various partitions layouts
-* **Eclipse** project files included. To include it into Eclipse goto File->Import->Existing Projects into Workspace->Select root directory->[select *MicroPython_BUILD* directory]->Finish. **Rebuild index**.
-
----
+## Contents
+- [MicroPython API](#micropython-api)
+  - [LCD](#lcd)
+  - [Button](#button)
+  - [SD Card](#sd-card)
+  - [Speaker](#speaker)
+  - [GPIO](#gpio)
+  - [PWM](#pwm)
+  - [ADC](#adc)
+  - [DAC](#dac)
+  - [I2C](#i2c)
+  - [SPI](#spi)
+  - [UART](#uart)
+  - [Timer](#timer)
+  - [Neopixel](#neopixel)
+  - [RTC](#rtc)
+- [LoBo MicroPython WiKi](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki)
 
 
-### How to Build
+# MicroPython API
 
----
+Micropython Getting Started
 
-Detailed instructions on **MicroPython** building process are available in the [Wiki](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki/build).
-
----
-
-
-#### Using file systems
-
-Detailed information about using MicroPython file systems are available in the [Wiki](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/wiki/filesystems).
-
----
-
-
-### Some examples
-
-Using new machine methods and RTC:
-
+In m5stack.py aleay init timer 0 as EXTBASE, lcd pwm use timer 1, speak use timer 2, 8 
 ```python
-import machine
-
-rtc = machine.RTC()
-
-rtc.init((2017, 6, 12, 14, 35, 20))
-
-rtc.now()
-
-rtc.ntp_sync(server="<ntp_server>" [,update_period=])
-  # <ntp_server> can be empty string, then the default server is used ("pool.ntp.org")
-
-rtc.synced()
-  # returns True if time synchronized to NTP server
-
-rtc.wake_on_ext0(Pin, level)
-rtc.wake_on_ext1(Pin, level)
-  # wake up from deepsleep on pin level
-
-machine.deepsleep(10000)
-ESP32: DEEP SLEEP
-
-# ...
-# ...
-
-Reset reason: Deepsleep wake-up
-Wakeup source: RTC wake-up
-    uPY stack: 19456 bytes
-     uPY heap: 3073664/5664/3068000 bytes (in SPIRAM using malloc)
-
-MicroPython ESP32_LoBo_v3.1.0 - 2017-01-03 on ESP32 board with ESP32
-Type "help()" for more information.
-
-machine.wake_reason()
-  # returns tuple with reset & wakeup reasons
-machine.wake_description()
-  # returns tuple with strings describing reset & wakeup reasons
-
+import m5stack
 ```
 
-Using sdcard module:
+## **LCD**
+
+---
+
+Import M5Stack:
+
+```python
+from m5stack import lcd
+lcd.print('hello world!')
+```
+
+#### Colors
+
+**Color** value are given as 24 bit integer numbers, 8-bit per color.
+
+For example: **0xFF0000** represents the RED color. Only upper 6 bits of the color component value is used.
+
+The following color constants are defined and can be used as color arguments: 
+
+**BLACK, NAVY, DARKGREEN, DARKCYAN, MAROON, PURPLE, OLIVE, LIGHTGREY, DARKGREY, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE, ORANGE, GREENYELLOW, PINK**
+
+#### Drawing
+
+All **drawings** coordinates are **relative** to the **display window**.
+
+Initialy, the display window is set to full screen, and there are methods to set the window to the part of the full screen.
+
+#### Fonts
+
+9 bit-mapped fornts and one vector 7-segment font are included.
+Unlimited number of fonts from file can also be used.
+
+The following font constants are defined and can be used as font arguments: 
+
+**FONT_Default, FONT_DefaultSmall, FONT_DejaVu18, FONT_Dejavu24, FONT_Ubuntu, FONT_Comic, FONT_Minya, FONT_Tooney, FONT_Small, FONT_7seg**
+
+
+---
+
+## Methods
+
+
+### lcd.pixel(x, y [,color])
+
+Draw the pixel at position (x,y).<br>
+If *color* is not given, current foreground color is used.
+
+
+### lcd.readPixel(x, y)
+
+Get the pixel color value at position (x,y).
+
+
+### lcd.line(x, y, x1, y1 [,color])
+
+Draw the line from point (x,y) to point (x1,y1)<br>
+If *color* is not given, current foreground color is used.
+
+
+### lcd.lineByAngle(x, y, start, length, angle [,color])
+
+Draw the line from point (x,y) with length *lenght* starting st distance *start* from center.<br>
+If *color* is not given, current foreground color is used.<br>
+The angle is given in degrees (0~359).
+
+
+### lcd.triangle(x, y, x1, y1, x2, y2 [,color, fillcolor])
+
+Draw the triangel between points (x,y), (x1,y1) and (x2,y2).<br>
+If *color* is not given, current foreground color is used.<br>
+If *fillcolor* is given, filled triangle will be drawn.
+
+
+### lcd.circle(x, y, r [,color, fillcolor])
+
+Draw the circle with center at (x,y) and radius r.<br>
+If *color* is not given, current foreground color is used.<br>
+If *fillcolor* is given, filled circle will be drawn.
+
+
+### lcd.ellipse(x, y, rx, ry [opt, color, fillcolor])
+
+Draw the circle with center at (x,y) and radius r.<br>
+If *color* is not given, current foreground color is used.<br>
+**opt* argument defines the ellipse segment to be drawn, default id 15, all ellipse segments.
+
+Multiple segments can drawn, combine (logical or) the values.
+* 1 - upper left segment
+* 2 - upper right segment
+* 4 - lower left segment
+* 8 - lower right segment
+
+If *fillcolor* is given, filled elipse will be drawn.
+
+
+### lcd.arc(x, y, r, thick, start, end [color, fillcolor])
+
+Draw the arc with center at (x,y) and radius *r*, starting at angle *start* and ending at angle *end*<br>
+The thicknes of the arc outline is set by the *thick* argument<br>
+If *fillcolor* is given, filled arc will be drawn.
+
+
+### lcd.poly(x, y, r, sides, thick, [color, fillcolor, rotate])
+
+Draw the polygon with center at (x,y) and radius *r*, with number of sides *sides*<br>
+The thicknes of the polygon outline is set by the *thick* argument<br>
+If *fillcolor* is given, filled polygon will be drawn.<br>
+If *rotate* is given, the polygon is rotated by the given angle (0~359)
+
+
+### lcd.rect(x, y, width, height, [color, fillcolor])
+
+Draw the rectangle from the upper left point at (x,y) and width *width* and height *height*<br>
+If *fillcolor* is given, filled rectangle will be drawn.
+
+
+### lcd.roundrect(x, y, width, height, r [color, fillcolor])
+
+Draw the rectangle with rounded corners from the upper left point at **(x,y)** and width **width** and height **height**<br>
+Corner radius is given by **r** argument.<br>
+If **fillcolor** is given, filled rectangle will be drawn.
+
+
+### lcd.clear([color])
+
+Clear the screen with default background color or specific color if given.
+
+
+### lcd.clearWin([color])
+
+Clear the current display window with default background color or specific color if given.
+
+
+### lcd.orient(orient)
+
+Set the display orientation.<br>
+Use one of predifined constants:<br>**lcd.PORTRAIT**, **lcd.LANDSCAPE**, **lcd.PORTRAIT_FLIP**, **lcd.LANDSCAPE_FLIP**
+
+
+### lcd.font(font [,rotate, transparent, fixedwidth, dist, width, outline, color])
+
+Set the active font and its characteristics.
+
+| Argument | Description |
+| - | - |
+| font | required, use font name constant or font file name |
+| rotate | optional, set font rotation angle (0~360) |
+| transparent | only draw font's foreground pixels |
+| fixedwidth | draw proportional font with fixed character width, max character width from the font is used |
+| dist | only for 7-seg font, the distance between bars |
+| width | only for 7-seg font, the width of the bar |
+| outline | only for 7-seg font, draw the outline |
+| color | font color, if not given the current foreground color is used |
+
+
+### lcd.attrib7seg(dist, width, outline, color)
+
+Set characteristics of the 7-segment font
+
+| Argument | Description |
+| - | - |
+| dist | the distance between bars |
+| width | the width of the bar |
+| outline | outline color |
+| color | fill color |
+
+
+### lcd.fontSize()
+
+Return width and height of the active font
+
+
+### lcd.print(text[,x, y, color, rotate, transparent, fixedwidth, wrap])
+
+Display the string *text* at possition (x,y).<br>
+If *color* is not given, current foreground color is used.
+
+* **x**: horizontal position of the upper left point in pixels, special values can be given:
+  * CENTER, centers the text
+  * RIGHT, right justifies the text
+  * LASTX, continues from last X position; offset can be used: LASTX+n
+* **y**: vertical position of the upper left point in pixels, special values can be given:
+  * CENTER, centers the text
+  * BOTTOM, bottom justifies the text
+  * LASTY, continues from last Y position; offset can be used: LASTY+n
+* **text**: string to be displayed. Two special characters are allowed in strings:
+  * ‘\r’ CR (0x0D), clears the display to EOL
+  * ‘\n’ LF (ox0A), continues to the new line, x=0
+
+
+### lcd.text(x, y, text [, color])
+
+Display the string *text* at possition (x,y).<br>
+If *color* is not given, current foreground color is used.
+
+* **x**: horizontal position of the upper left point in pixels, special values can be given:
+  * CENTER, centers the text
+  * RIGHT, right justifies the text
+  * LASTX, continues from last X position; offset can be used: LASTX+n
+* **y**: vertical position of the upper left point in pixels, special values can be given:
+  * CENTER, centers the text
+  * BOTTOM, bottom justifies the text
+  * LASTY, continues from last Y position; offset can be used: LASTY+n
+* **text**: string to be displayed. Two special characters are allowed in strings:
+  * ‘\r’ CR (0x0D), clears the display to EOL
+  * ‘\n’ LF (ox0A), continues to the new line, x=0
+
+ 
+### lcd.textWidth(text)
+
+Return the width of the string *text* using the active font fontSize
+
+
+### lcd.textClear(x, y, text [, color])
+
+Clear the the screen area used by string *text* at possition (x,y) using the bacckground color *color*.<br>
+If *color* is not given, current background color is used.
+
+
+### lcd.image(x, y, file [,scale, type])
+
+Display the image from the file *file* on position (x,y)
+* **JPG** and **BMP** can be displayed.
+* Constants **lcd.CENTER**, **lcd.BOTTOM**, **lcd.RIGHT** can be used for x&y
+* **x** and **y** values can be negative
+
+**scale** (jpg): image scale factor: 0 to 3; if scale>0, image is scaled by factor 1/(2^scale) (1/2, 1/4 or 1/8)<br>
+**scale** (bmp): image scale factor: 0 to 7; if scale>0, image is scaled by factor 1/(scale+1)<br>
+**type**: optional, set the image type, constants *lcd.JPG* or *lcd.BMP* can be used. If not set, file extension and/or file content will be used to determine the image type.
+
+
+### lcd.setwin(x, y, x1, y1)
+
+Set active display window to screen rectangle (x,y) - (x1,y1)
+
+
+### lcd.resetwin()
+
+Reset active display window to full screen size.
+
+
+### lcd.savewin()
+
+Save active display window dimensions.
+
+
+### lcd.restorewin()
+
+Restore active display window dimensions previously saved wint savewin().
+
+
+### lcd.screensize()
+
+Return the display size, (width, height)
+
+
+### lcd.winsize()
+
+Return the active display window size, (width, height)
+
+
+### lcd.hsb2rgb(hue, saturation, brightness)
+
+Converts the components of a color, as specified by the HSB model, to an equivalent set of values for the default RGB model.<br>
+Returns 24-bit integer value suitable to be used as color argiment
+
+Arguments
+* **hue**: float: any number, the floor of this number is subtracted from it to create a fraction between 0 and 1. This fractional number is then multiplied by 360 to produce the hue angle in the HSB color model.
+* **saturation**: float; 0 ~ 1.0
+* **brightness**: float; 0 ~ 1.0
+
+
+### lcd.compileFont(file_name [,debug])
+
+Compile the source font file (must have **.c** extension) to the binary font file (same name, **.fon** extension) which can be used as external font.<br>
+If *debug=True* the information about compiled font will be printed.
+
+You can create the **c** source file from any **tft** font using the included [ttf2c_vc2003.exe](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/tree/master/MicroPython_BUILD/components/micropython/esp32/modules_examples/tft/font_tool/) program.
+See [README](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo/tree/master/MicroPython_BUILD/components/micropython/esp32/modules_examples/tft/font_tool/README.md) for instructions.
+
+## **Button**
+
+---
+### Method
+```python
+buttonA.isPressed()
+buttonA.isReleased()
+buttonA.pressedFor(timeout)
+
+# if set the callback param, it will interrupt callback function
+# or if not set param it will return result at once
+buttonA.wasPressed(callback=None) 
+buttonA.wasReleased(callback=None)
+buttonA.releasedFor(timeout, callback=None)
+```
+
+### Example
+Loop:
+
+```python
+from m5stack import *
+import utime
+
+while True:
+  if buttonA.wasPressed():
+    lcd.print('Button A was Pressed\n')
+
+  if buttonA.wasReleased():
+    lcd.print('Button A was Released\n')
+
+  if buttonA.pressedFor(1.5):
+    lcd.print('Button A pressed for 1.5s\n')
+
+  if buttonA.releasedFor(2):
+    lcd.print('Button A released for 2s press hold\n')
+    
+  utime.sleep(0.1)
+```
+
+Callback：
+
+
+```python
+from m5stack import *
+
+def on_wasPressed():
+  lcd.print('Button B was Pressed\n')
+
+def on_wasReleased():
+  lcd.print('Button B was Released\n')
+
+def on_releasedFor():
+  lcd.print('Button B released for 1.2s press hold\n')
+  
+buttonB.wasPressed(on_wasPressed)
+buttonB.wasReleased(on_wasReleased)
+buttonB.releasedFor(1.2, on_releasedFor)
+```
+
+## **SD Card**
+
+---
 
 ```python
 import uos
@@ -159,107 +386,212 @@ uos.mountsd()
 uos.listdir('/sd')
 ```
 
-Working directory can be changed to root of the sd card automatically on mount:
+
+## **Speaker**
+
+---
 
 ```python
->>> import uos
->>> uos.mountsd(True)
----------------------
- Mode:  SD (4bit)
- Name: NCard
- Type: SDHC/SDXC
-Speed: default speed (25 MHz)
- Size: 15079 MB
-  CSD: ver=1, sector_size=512, capacity=30881792 read_bl_len=9
-  SCR: sd_spec=2, bus_width=5
+from m5stack import *
 
->>> uos.listdir()
-['overlays', 'bcm2708-rpi-0-w.dtb', ......
->>>
+speaker.volume(2)
+speaker.tone(freq=1800)
+speaker.tone(freq=1800, duration=200) # Non-blocking
 ```
+
+## **GPIO**
 
 ---
 
-Tested on **ESP-WROVER-KIT v3**
-![Tested on](https://raw.githubusercontent.com/loboris/MicroPython_ESP32_psRAM_LoBo/master/Documents/ESP-WROVER-KIT_v3_small.jpg)
+```python
+import machine
+
+pinout = machine.Pin(0, machine.Pin.OUT)
+pinout.value(1)
+
+pinin = machine.Pin(2, machine.Pin.IN)
+val = pinin.value()
+```
+
+## **PWM**
 
 ---
+`pwm = machine.PWM(pin [, freq=f] [, duty=d] [, timer=tm])`
+`pwm.init([ freq=f] [, duty=d] [, timer=tm])`
 
-### Example terminal session
+| Arg | Description |
+| - | - |
+| pin | esp32 GPIO number to be used as pwm output<br>can be given as integer value or machine.Pin object |
+| freq | **optional**, default 5 kHz; pwm frequeny in Hz (1 - 40000000) |
+| duty | **optional**, default 50% kHz; pwm duty cycle in % (0 - 100) |
+| timer | **optional**, default **0**; pwm timer (0 - 3) |
 
+PWM channel is selected automatically from 8 available pwm channels.
+
+
+```python
+import machine
+pwm = machine.PWM(26)
+pwm.freq(5000)
+pwm.duty(66) # 0.0 ~ 100.0
+```
+
+
+## **ADC**
+
+---
+```python
+import machine
+
+adc = machine.ADC(35)
+adc.read()
+```
+
+
+## **DAC**
+
+---
+```python
+import machine
+
+dac = machine.DAC(machine.Pin(26))
+dac.write(128)
+```
+
+
+## **I2C**
+
+---
+```python
+from machine import I2C
+
+i2c = I2C(freq=400000, sda=21, scl=22)
+                                # create I2C peripheral at frequency of 400kHz
+                                # depending on the port, extra parameters may be required
+                                # to select the peripheral and/or pins to use
+
+i2c.scan()                      # scan for slaves, returning a list of 7-bit addresses
+
+i2c.writeto(42, b'123')         # write 3 bytes to slave with 7-bit address 42
+i2c.readfrom(42, 4)             # read 4 bytes from slave with 7-bit address 42
+
+i2c.readfrom_mem(42, 8, 3)      # read 3 bytes from memory of slave 42,
+                                #   starting at memory-address 8 in the slave
+i2c.writeto_mem(42, 2, b'\x10') # write 1 byte to memory of slave 42
+                                #   starting at address 2 in the slave
+```
+
+## **SPI**
+
+---
+```python
+from machine import SPI, Pin
+
+spi = SPI(
+    spihost=SPI.HSPI, 
+    baudrate=2600000
+    sck=Pin(18), 
+    mosi=Pin(23), 
+    miso=Pin(19), 
+    cs=Pin(4)
+)
+
+spi.write(buf) #NOHEAP
+spi.read(nbytes, *, write=0x00) #write is the byte to ?output on MOSI for each byte read in
+spi.readinto(buf, *, write=0x00) #NOHEAP
+spi.write_readinto(write_buf, read_buf) #NOHEAP; write_buf and read_buf can be the same
 
 ```
-I (0) cpu_start: App cpu up.
-I (1569) spiram: SPI SRAM memory test OK
-I (1570) heap_init: Initializing. RAM available for dynamic allocation:
-D (1570) heap_init: New heap initialised at 0x3ffae6e0
-I (1575) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
-D (1581) heap_init: New heap initialised at 0x3ffc1a00
-I (1586) heap_init: At 3FFC1A00 len 0001E600 (121 KiB): DRAM
-I (1593) heap_init: At 3FFE0440 len 00003BC0 (14 KiB): D/IRAM
-I (1599) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
-D (1606) heap_init: New heap initialised at 0x4009d70c
-I (1611) heap_init: At 4009D70C len 000028F4 (10 KiB): IRAM
-I (1617) cpu_start: Pro cpu start user code
-I (1622) spiram: Adding pool of 4096K of external SPI memory to heap allocator
-I (1630) spiram: Reserving pool of 32K of internal memory for DMA/internal allocations
-D (1646) clk: RTC_SLOW_CLK calibration value: 3305242
-D (89) intr_alloc: Connected src 46 to int 2 (cpu 0)
-D (90) intr_alloc: Connected src 57 to int 3 (cpu 0)
-D (90) intr_alloc: Connected src 24 to int 9 (cpu 0)
-I (95) cpu_start: Starting scheduler on PRO CPU.
-D (0) intr_alloc: Connected src 25 to int 2 (cpu 1)
-I (4) cpu_start: Starting scheduler on APP CPU.
-D (119) heap_init: New heap initialised at 0x3ffe0440
-D (125) heap_init: New heap initialised at 0x3ffe4350
-D (130) intr_alloc: Connected src 16 to int 12 (cpu 0)
-D (145) nvs: nvs_flash_init_custom partition=nvs start=9 count=4
-D (178) intr_alloc: Connected src 34 to int 3 (cpu 1)
-D (187) intr_alloc: Connected src 22 to int 4 (cpu 1)
 
-Internal FS (SPIFFS): Mounted on partition 'internalfs' [size: 1048576; Flash address: 0x2D0000]
-----------------
-Filesystem size: 956416 B
-           Used: 512 B
-           Free: 955904 B
-----------------
+## **UART**
 
-FreeRTOS running on BOTH CORES, MicroPython task running on both cores.
-Running from partition at 10000, type 10 [MicroPython_1].
+---
+```python
+from machine import UART
 
- Reset reason: Power on reset
-    uPY stack: 19456 bytes
-     uPY heap: 3073664/5664/3068000 bytes (in SPIRAM using malloc)
+uart2 = UART(2, tx=17, rx=16)
+uart2.init(115200, bits=8, parity=None, stop=1)
+uart2.read(10)       # read 10 characters, returns a bytes object
+uart2.read()         # read all available characters
+uart2.readline()     # read a line
+uart2.readinto(buf)  # read and store into the given buffer
+uart2.write('abc')   # write the 3 characters
+```
 
-MicroPython ESP32_LoBo_v3.1.0 - 2017-01-03 on ESP32 board with ESP32
-Type "help()" for more information.
->>> 
->>> import micropython, machine
->>> 
->>> micropython.mem_info()
-stack: 752 out of 19456
-GC: total: 3073664, used: 5904, free: 3067760
- No. of 1-blocks: 19, 2-blocks: 7, max blk sz: 325, max free sz: 191725
->>> 
->>> machine.heap_info()
-Heap outside of MicroPython heap:
----------------------------------
-              Free: 239920
-         Allocated: 52328
-      Minimum free: 233100
-      Total blocks: 85
-Largest free block: 113804
-  Allocated blocks: 79
-       Free blocks: 6
+## **Timer**
 
-SPIRAM info:
-------------
-              Free: 1048532
-         Allocated: 3145728
-      Minimum free: 1048532
-      Total blocks: 2
-Largest free block: 1048532
-  Allocated blocks: 1
-       Free blocks: 1
->>>
+---
+tm = machine.Timer(timer_no)
+
+  timer_no argument is the timer number to be used for the timer.
+  It can be 0 - 3 for 4 hardware timers or 4 - 11 for extended timers.
+  If extended timer is selected, timer 0 must already be configured in EXTBASE mode. 
+```python
+import machine
+
+tcounter = 0
+
+p1 = machine.Pin(27)
+p1.init(p1.OUT)
+p1.value(1)
+
+def tcb(timer):
+    global tcounter
+    if tcounter & 1:
+        p1.value(0)
+    else:
+        p1.value(1)
+    tcounter += 1
+    if (tcounter % 10000) == 0:
+        print("[tcb] timer: {} counter: {}".format(timer.timernum(), tcounter))
+
+t1 = machine.Timer(2)
+t1.init(period=20, mode=t1.PERIODIC, callback=tcb)
+```
+
+## **Neopixel**
+
+---
+```python
+import machine, time
+
+np = machine.Neopixel(machine.Pin(22), 24)
+
+def rainbow(loops=120, delay=1, sat=1.0, bri=0.2):
+    for pos in range(0, loops):
+        for i in range(0, 24):
+            dHue = 360.0/24*(pos+i);
+            hue = dHue % 360;
+            np.setHSB(i, hue, sat, bri, 1, False)
+        np.show()
+        if delay > 0:
+            time.sleep_ms(delay)
+
+def blinkRainbow(loops=10, delay=250):
+    for pos in range(0, loops):
+        for i in range(0, 24):
+            dHue = 360.0/24*(pos+i);
+            hue = dHue % 360;
+            np.setHSB(i, hue, 1.0, 0.1, 1, False)
+        np.show()
+        time.sleep_ms(delay)
+        np.clear()
+        time.sleep_ms(delay)
+```
+
+## **RTC**
+
+---
+```python
+import machine
+import utime
+
+rtc = machine.RTC()
+rtc.ntp_sync(server="hr.pool.ntp.org", tz="CET-1CEST")
+rtc.synced()
+True
+utime.gmtime()
+(2018, 1, 29, 16, 3, 18, 2, 29)
+utime.localtime()
+(2018, 1, 29, 17, 3, 30, 2, 29)
 ```
