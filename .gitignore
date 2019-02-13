@@ -46,11 +46,6 @@ genrst/
 BUILD
 tests/
 
-esp-idf/
-esp-idf_psram/
-xtensa-esp32-elf/
-xtensa-esp32-elf_psram/
-
 backup.sh
 
 
