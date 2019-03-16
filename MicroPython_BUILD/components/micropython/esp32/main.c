@@ -36,6 +36,9 @@
 #include "nvs_flash.h"
 #include "esp_task.h"
 #include "soc/cpu.h"
+#include "soc/rtc.h"
+#include "soc/rtc_cntl_reg.h"
+#include "soc/rtc_io_reg.h"
 #include "esp_log.h"
 #include "driver/periph_ctrl.h"
 #include "esp_ota_ops.h"
@@ -84,6 +87,28 @@ static int mp_task_stack_len = 4096;
 static uint8_t *mp_task_heap = NULL;
 
 //STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
+
+
+static void rtc_wdt_enable(int time_ms)
+{
+    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, RTC_CNTL_WDT_WKEY_VALUE);
+    WRITE_PERI_REG(RTC_CNTL_WDTFEED_REG, 1);
+    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_SYS_RESET_LENGTH, 7);
+    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_CPU_RESET_LENGTH, 7);
+    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_STG0, RTC_WDT_STG_SEL_RESET_RTC);
+    WRITE_PERI_REG(RTC_CNTL_WDTCONFIG1_REG, rtc_clk_slow_freq_get_hz() * time_ms / 1000);
+    SET_PERI_REG_MASK(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_EN | RTC_CNTL_WDT_PAUSE_IN_SLP);
+    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, 0);
+}
+
+static void rtc_wdt_disable()
+{
+    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, RTC_CNTL_WDT_WKEY_VALUE);
+    WRITE_PERI_REG(RTC_CNTL_WDTFEED_REG, 1);
+    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_STG0, RTC_WDT_STG_SEL_OFF);
+    REG_CLR_BIT(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_EN);
+    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, 0);
+}
 
 int MainTaskCore = 0;
 
@@ -140,6 +165,9 @@ void mp_task(void *pvParameter)
 	// Initialize peripherals
     machine_pins_init();
 
+	// Disable WDT
+	rtc_wdt_disable();
+	
     ESP_LOGI("MicroPython", "[=== MicroPython FreeRTOS task started (sp=%08x) ===]\n", sp);
 
     // === Mount internal flash file system ===
@@ -326,7 +354,12 @@ void micropython_entry(void)
     // -------------------------------------------------------------------------------------------------------------
 	*/
 
-    nvs_flash_init();
+	{
+    	esp_err_t err = nvs_flash_init();
+		if( err != ESP_OK ) {
+			ESP_LOGE("MicroPython", "Failed to initialize NVS - %d", err);
+		}
+	}
 
     // ================================
     // === Check and allocate stack ===

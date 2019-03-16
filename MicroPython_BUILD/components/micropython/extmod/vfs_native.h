@@ -45,7 +45,11 @@
 #define VFS_NATIVE_MOUNT_POINT			"/_#!#_spiflash"
 #endif
 #define VFS_NATIVE_SDCARD_MOUNT_POINT	"/_#!#_sdcard"
+#if CONFIG_MICROPY_USE_ARDUINO_LAYOUT
+#define VFS_NATIVE_INTERNAL_PART_LABEL	"spiffs"
+#else
 #define VFS_NATIVE_INTERNAL_PART_LABEL	"internalfs"
+#endif
 #define VFS_NATIVE_INTERNAL_MP			"/flash"
 #define VFS_NATIVE_EXTERNAL_MP			"/sd"
 #define VFS_NATIVE_TYPE_SPIFLASH		0

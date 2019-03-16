@@ -28,6 +28,12 @@ menu "MicroPython"
         help
             Use OTA partition layout and include OTA module into build
 
+    config MICROPY_USE_ARDUINO_LAYOUT
+        bool "Use Arduino partition layout"
+        default n
+        help
+            Use Arduino partition layout
+
     config GPIO_INPUT_FORCE_FACTORY
         bool "Use GPIO pin to force boot from Factory partition"
         depends on MICROPY_USE_OTA
