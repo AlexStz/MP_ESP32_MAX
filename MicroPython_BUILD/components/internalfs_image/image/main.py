@@ -1,34 +1,42 @@
-import machine, network, utime
+# This file is executed on every boot (including wake-boot from deepsleep)
+import sys
+sys.path[1] = '/flash:/flash/lib'
 
-print("")
-print("Starting WiFi ...")
-sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
-sta_if.connect("mySSID", "wifi_password")
-tmo = 50
-while not sta_if.isconnected():
-    utime.sleep_ms(100)
-    tmo -= 1
-    if tmo == 0:
-        sta_if.disconnect()
-        break
+import time
+import network
+import machine
+import gc
+import nvs
+import m5stack
+import ota
 
-if tmo > 0:
-    print("WiFi started")
-    utime.sleep_ms(500)
+if m5stack.buttonA.isPressed():
+    if ota.set_bootpart('app0'):
+        machine.reset()
 
-    rtc = machine.RTC()
-    print("Synchronize time from NTP server ...")
-    rtc.ntp_sync(server="hr.pool.ntp.org")
-    tmo = 100
-    while not rtc.synced():
-        utime.sleep_ms(100)
-        tmo -= 1
-        if tmo == 0:
-            break
+wifi_cancelled = m5stack.buttonC.isPressed() # type: bool
 
-    if tmo > 0:
-        print("Time set")
-        utime.sleep_ms(500)
-        t = rtc.now()
-        utime.strftime("%c")
-        print("")
+nvs_wifi = nvs.NVS(namespace='wifi-config')
+wifi_ssid     = nvs_wifi.get_str('WIFI_SSID')   # type: str
+wifi_password = nvs_wifi.get_str('WIFI_PASSWD') # type: str
+has_wifi_config = wifi_ssid is not None and wifi_password is not None
+
+if has_wifi_config and not wifi_cancelled:
+    s = 'Connecting to Wi-Fi AP {0}... Press C to cancel'.format(wifi_ssid)
+    m5stack.lcd.print(s)
+    print(s)
+    w = network.WLAN()
+    w.active(True)
+    w.connect(wifi_ssid, wifi_password)
+    while not w.isconnected() and not wifi_cancelled:
+        wifi_cancelled = m5stack.buttonC.isPressed()
+        time.sleep(1)
+
+if has_wifi_config and not wifi_cancelled:
+    ifconfig = w.ifconfig()
+    m5stack.lcd.print(ifconfig[0])
+    print(ifconfig)
+    # Start FTP server to upload source codes.
+    network.ftp.start(user='esp32', password='esp32')
+
+gc.collect()

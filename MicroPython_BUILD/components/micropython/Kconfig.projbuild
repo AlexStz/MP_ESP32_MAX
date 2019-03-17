@@ -224,7 +224,7 @@ menu "MicroPython"
                 Set the default size of the MicroPython heap in Kbytes
                 If SPIRAM is not used, heap is allocated from DRAM and setting the heap size too large
                 may result in insuficient heap for C services like mqtt, gsm, curl...
-
+        
         config MICROPY_THREAD_MAX_THREADS
             int "Maximum number of threads"
             range 1 16
@@ -443,7 +443,13 @@ menu "MicroPython"
                 When using Bluetooth ~72 KB more RAM will be used
                 It can only be used on boards with psRAM
                 The used Flash size will increase by more than 500 KB if used
-
+        
+        config MICROPY_USE_NVS
+            bool "Use NVS access module"
+            default n
+            help
+                Include NVS access module
+        
         config MICROPY_USE_RFCOMM
             bool "Use RFCOMM module"
             depends on SPIRAM_SUPPORT && BT_ENABLED && BLUEDROID_ENABLED && CLASSIC_BT_ENABLED && BT_SPP_ENABLED

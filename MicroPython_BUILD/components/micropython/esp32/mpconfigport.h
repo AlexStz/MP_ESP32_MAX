@@ -331,6 +331,13 @@ extern const struct _mp_obj_module_t mp_module_bluetooth;
 #define BUILTIN_MODULE_BLUETOOTH
 #endif
 
+#ifdef CONFIG_MICROPY_USE_NVS
+extern const struct _mp_obj_module_t mp_module_nvs;
+#define BUILTIN_MODULE_NVS { MP_OBJ_NEW_QSTR(MP_QSTR_nvs), (mp_obj_t)&mp_module_nvs },
+#else
+#define BUILTIN_MODULE_NVS
+#endif
+
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_utime),    (mp_obj_t)&utime_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_uos),      (mp_obj_t)&uos_module }, \
@@ -346,6 +353,7 @@ extern const struct _mp_obj_module_t mp_module_bluetooth;
 	BUILTIN_MODULE_GSM \
 	BUILTIN_MODULE_OTA \
 	BUILTIN_MODULE_BLUETOOTH \
+	BUILTIN_MODULE_NVS \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
     { MP_OBJ_NEW_QSTR(MP_QSTR_binascii), (mp_obj_t)&mp_module_ubinascii }, \

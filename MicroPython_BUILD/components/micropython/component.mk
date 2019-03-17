@@ -231,6 +231,10 @@ SRC_C += esp32/bluetooth_le.c
 SRC_C += esp32/modbluetooth.c
 endif
 
+ifdef CONFIG_MICROPY_USE_NVS
+SRC_C += esp32/modnvs.c
+endif
+
 ifdef CONFIG_MICROPY_USE_RFCOMM
 SRC_C += esp32/machine_rfcomm.c
 endif
