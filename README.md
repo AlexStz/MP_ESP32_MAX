@@ -7,13 +7,16 @@
 
 ## 特徴
 
-* ESP-IDFのバージョンを更新しやすいようにsubmoduleで取得するように変更
-    * v3.1ベースに更新済み
 * パーティション構成をArduino core for ESP32の`default_16MB`と同じ構成に変更
 * SD-Updaterによる書き込みに対応
     * 起動時に`Button A`を押しっぱなしにして `app0` への切り替えを行う。
 * [M5Stack_LovyanLauncher](https://github.com/lovyan03/M5Stack_LovyanLauncher) で設定したWi-Fiクライアント接続設定をNVSから取得して使用するように変更
     * NVS読み取り用モジュール (`nvs`) を追加
+* FTPサーバー・モジュールを有効化
+    * デフォルトで ユーザー名 `esp32` パスワード `esp32` として起動
+    * スクリプトの転送に使用可能
+* ESP-IDFのバージョンを更新しやすいようにsubmoduleで取得するように変更
+    * v3.1ベースに更新済み
 
 ## 課題
 
