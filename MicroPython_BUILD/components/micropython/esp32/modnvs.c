@@ -93,7 +93,7 @@ typedef esp_err_t (*nvs_get_func)(nvs_handle, const char*, void*);
 STATIC bool nvs_get_integral_m(mp_obj_t self_in, mp_obj_t key, void* value, nvs_get_func get_func) {
     mp_obj_nvs_t* self = (mp_obj_nvs_t*)self_in;
     const char* key_str = mp_obj_str_get_str(key);
-    esp_err_t err = get_func(self->handle, key_str, &value);
+    esp_err_t err = get_func(self->handle, key_str, value);
     if( err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND ) {
         char message[80];
         sprintf(message, "Failed to get NVS value - %d", err);
@@ -162,13 +162,110 @@ STATIC mp_obj_t nvs_m_get_str(mp_obj_t self_in, mp_obj_t key) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(nvs_get_str_obj, nvs_m_get_str);
 
+
+////
+// set methods
+//
+typedef esp_err_t (*nvs_set_func)(nvs_handle, const char*, uint64_t);
+STATIC void nvs_set_integral_m(mp_obj_t self_in, mp_obj_t key, mp_obj_t value, nvs_set_func set_func) {
+    mp_obj_nvs_t* self = (mp_obj_nvs_t*)self_in;
+    const char* key_str = mp_obj_str_get_str(key);
+    int64_t value_64 = mp_obj_get_int64(value);
+    esp_err_t err = set_func(self->handle, key_str, value_64);
+    if( err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND ) {
+        char message[80];
+        sprintf(message, "Failed to set NVS value - %d", err);
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, message));
+    }
+}
+
+STATIC esp_err_t nvs_set_wrap_u8 (nvs_handle handle, const char* key, uint64_t value) { return nvs_set_u8 (handle, key, value); }
+STATIC esp_err_t nvs_set_wrap_u16(nvs_handle handle, const char* key, uint64_t value) { return nvs_set_u16(handle, key, value); }
+STATIC esp_err_t nvs_set_wrap_u32(nvs_handle handle, const char* key, uint64_t value) { return nvs_set_u32(handle, key, value); }
+STATIC esp_err_t nvs_set_wrap_u64(nvs_handle handle, const char* key, uint64_t value) { return nvs_set_u64(handle, key, value); }
+
+STATIC mp_obj_t nvs_m_set_u8(mp_obj_t self_in, mp_obj_t key, mp_obj_t value) {
+    nvs_set_integral_m(self_in, key, value, (nvs_set_func)&nvs_set_wrap_u8);
+    return mp_const_none;
+}
+STATIC mp_obj_t nvs_m_set_u16(mp_obj_t self_in, mp_obj_t key, mp_obj_t value) {
+    nvs_set_integral_m(self_in, key, value, (nvs_set_func)&nvs_set_wrap_u16);
+    return mp_const_none;
+}
+STATIC mp_obj_t nvs_m_set_u32(mp_obj_t self_in, mp_obj_t key, mp_obj_t value) {
+    nvs_set_integral_m(self_in, key, value, (nvs_set_func)&nvs_set_wrap_u32);
+    return mp_const_none;
+}
+STATIC mp_obj_t nvs_m_set_u64(mp_obj_t self_in, mp_obj_t key, mp_obj_t value) {
+    nvs_set_integral_m(self_in, key, value, (nvs_set_func)&nvs_set_wrap_u64);
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(nvs_set_u8_obj,  nvs_m_set_u8);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(nvs_set_u16_obj, nvs_m_set_u16);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(nvs_set_u32_obj, nvs_m_set_u32);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(nvs_set_u64_obj, nvs_m_set_u64);
+
+
+STATIC mp_obj_t nvs_m_set_str(mp_obj_t self_in, mp_obj_t key, mp_obj_t value) {
+    mp_obj_nvs_t* self = (mp_obj_nvs_t*)self_in;
+    const char* key_str = mp_obj_str_get_str(key);
+    const char* value_str = mp_obj_str_get_str(value);
+
+    esp_err_t err = nvs_set_str(self->handle, key_str, value_str);
+    if( err != ESP_OK ) {
+        char message[80];
+        sprintf(message, "Failed to set NVS value - %d", err);
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, message));
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(nvs_set_str_obj, nvs_m_set_str);
+
+/////
+// control methods
+STATIC mp_obj_t nvs_m_erase_key(mp_obj_t self_in, mp_obj_t key) {
+    mp_obj_nvs_t* self = (mp_obj_nvs_t*)self_in;
+    const char* key_str = mp_obj_str_get_str(key);
+    esp_err_t err = nvs_erase_key(self->handle, key_str);
+    if( err != ESP_OK ) {
+        char message[80];
+        sprintf(message, "Failed to erase NVS value - %d", err);
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, message));
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(nvs_erase_key_obj, nvs_m_erase_key);
+
+STATIC mp_obj_t nvs_m_commit(mp_obj_t self_in) {
+    mp_obj_nvs_t* self = (mp_obj_nvs_t*)self_in;
+    esp_err_t err = nvs_commit(self->handle);
+    if( err != ESP_OK ) {
+        char message[80];
+        sprintf(message, "Failed to erase NVS value - %d", err);
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, message));
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(nvs_commit_obj, nvs_m_commit);
+
 STATIC const mp_rom_map_elem_t nvs_locals_dict_table[] = {
+    // Get
     { MP_ROM_QSTR(MP_QSTR_get_u8 ), MP_ROM_PTR(&nvs_get_u8_obj ) },
     { MP_ROM_QSTR(MP_QSTR_get_u16), MP_ROM_PTR(&nvs_get_u16_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_u32), MP_ROM_PTR(&nvs_get_u32_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_u64), MP_ROM_PTR(&nvs_get_u64_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_str), MP_ROM_PTR(&nvs_get_str_obj) },
-    { MP_ROM_QSTR(MP_QSTR_close  ), MP_ROM_PTR(&nvs_close_obj  ) },
+    // Set
+    { MP_ROM_QSTR(MP_QSTR_set_u8 ), MP_ROM_PTR(&nvs_set_u8_obj ) },
+    { MP_ROM_QSTR(MP_QSTR_set_u16), MP_ROM_PTR(&nvs_set_u16_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_u32), MP_ROM_PTR(&nvs_set_u32_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_u64), MP_ROM_PTR(&nvs_set_u64_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_str), MP_ROM_PTR(&nvs_set_str_obj) },
+    // Control
+    { MP_ROM_QSTR(MP_QSTR_erase_key), MP_ROM_PTR(&nvs_erase_key_obj) },
+    { MP_ROM_QSTR(MP_QSTR_commit   ), MP_ROM_PTR(&nvs_commit_obj   ) },
+    { MP_ROM_QSTR(MP_QSTR_close    ), MP_ROM_PTR(&nvs_close_obj    ) },
 };
 STATIC MP_DEFINE_CONST_DICT(nvs_locals_dict, nvs_locals_dict_table);
 
@@ -186,7 +283,14 @@ STATIC void nvs_attr(mp_obj_t self_in, qstr attr, mp_obj_t* dest)
         case MP_QSTR_get_u32: if( is_load ) { dest[0] = (mp_obj_t)&nvs_get_u32_obj; dest[1] = self_in; } break;
         case MP_QSTR_get_u64: if( is_load ) { dest[0] = (mp_obj_t)&nvs_get_u64_obj; dest[1] = self_in; } break;
         case MP_QSTR_get_str: if( is_load ) { dest[0] = (mp_obj_t)&nvs_get_str_obj; dest[1] = self_in; } break;
-        case MP_QSTR_close:   if( is_load ) { dest[0] = (mp_obj_t)&nvs_close_obj;   dest[1] = self_in; } break;
+        case MP_QSTR_set_u8 : if( is_load ) { dest[0] = (mp_obj_t)&nvs_set_u8_obj;  dest[1] = self_in; } break;
+        case MP_QSTR_set_u16: if( is_load ) { dest[0] = (mp_obj_t)&nvs_set_u16_obj; dest[1] = self_in; } break;
+        case MP_QSTR_set_u32: if( is_load ) { dest[0] = (mp_obj_t)&nvs_set_u32_obj; dest[1] = self_in; } break;
+        case MP_QSTR_set_u64: if( is_load ) { dest[0] = (mp_obj_t)&nvs_set_u64_obj; dest[1] = self_in; } break;
+        case MP_QSTR_set_str: if( is_load ) { dest[0] = (mp_obj_t)&nvs_set_str_obj; dest[1] = self_in; } break;
+        case MP_QSTR_erase_key: if( is_load ) { dest[0] = (mp_obj_t)&nvs_erase_key_obj; dest[1] = self_in; } break;
+        case MP_QSTR_commit:    if( is_load ) { dest[0] = (mp_obj_t)&nvs_commit_obj;    dest[1] = self_in; } break;
+        case MP_QSTR_close:     if( is_load ) { dest[0] = (mp_obj_t)&nvs_close_obj;     dest[1] = self_in; } break;
 
         case MP_QSTR_mode: { // obj.mode
             if( is_load ) {
