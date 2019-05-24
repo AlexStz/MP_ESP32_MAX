@@ -3224,39 +3224,46 @@ int TFT_read_touch(int *x, int* y, uint8_t raw)
     }
 
     // Calibrate the result
-	int tmp;
-	int xleft   = (tp_calx >> 16) & 0x3FFF;
-	int xright  = tp_calx & 0x3FFF;
-	int ytop    = (tp_caly >> 16) & 0x3FFF;
-	int ybottom = tp_caly & 0x3FFF;
+    int tmp;
+    int xleft   = (tp_calx >> 16) & 0x3FFF;
+    int xright  = tp_calx & 0x3FFF;
+    int ytop    = (tp_caly >> 16) & 0x3FFF;
+    int ybottom = tp_caly & 0x3FFF;
 
-	if (((xright - xleft) <= 0) || ((ybottom - ytop) <= 0)) return 0;
+    if (((xright - xleft) <= 0) || ((ybottom - ytop) <= 0)) return 0;
 
     if (tft_touch_type == TOUCH_TYPE_XPT2046) {
         int width = _width;
         int height = _height;
-        X = ((X - xleft) * height) / (xright - xleft);
-        Y = ((Y - ytop) * width) / (ybottom - ytop);
+        if (_width > _height) {
+            width = _height;
+            height = _width;
+        }
+        X = ((X - xleft) * width) / (xright - xleft);
+        Y = ((Y - ytop) * height) / (ybottom - ytop);
 
         if (X < 0) X = 0;
-        if (X > height-1) X = height-1;
+        if (X > width-1) X = width-1;
         if (Y < 0) Y = 0;
-        if (Y > width-1) Y = width-1;
+        if (Y > height-1) Y = height-1;
+
+        X = width - X - 1;
+        Y = height - Y - 1;
 
         switch (orientation) {
-            case PORTRAIT:
-                tmp = X;
-                X = width - Y - 1;
-                Y = tmp;
-                break;
             case PORTRAIT_FLIP:
+                X = width - X - 1;
+                Y = height - Y - 1;
+                break;
+            case LANDSCAPE:
                 tmp = X;
                 X = Y;
-                Y = height - tmp - 1;
+                Y = width - tmp -1;
                 break;
             case LANDSCAPE_FLIP:
-                X = height - X - 1;
-                Y = width - Y - 1;
+                tmp = X;
+                X = height - Y -1;
+                Y = tmp;
                 break;
         }
     }
@@ -3267,34 +3274,34 @@ int TFT_read_touch(int *x, int* y, uint8_t raw)
             width = _height;
             height = _width;
         }
-		X = ((X - xleft) * width) / (xright - xleft);
-		Y = ((Y - ytop) * height) / (ybottom - ytop);
+	X = ((X - xleft) * width) / (xright - xleft);
+	Y = ((Y - ytop) * height) / (ybottom - ytop);
 
-		if (X < 0) X = 0;
-		if (X > width-1) X = width-1;
-		if (Y < 0) Y = 0;
-		if (Y > height-1) Y = height-1;
+	if (X < 0) X = 0;
+	if (X > width-1) X = width-1;
+	if (Y < 0) Y = 0;
+	if (Y > height-1) Y = height-1;
 
-		switch (orientation) {
-			case PORTRAIT_FLIP:
-				X = width - X - 1;
-				Y = height - Y - 1;
-				break;
-			case LANDSCAPE:
-				tmp = X;
-				X = Y;
-				Y = width - tmp -1;
-				break;
-			case LANDSCAPE_FLIP:
-				tmp = X;
-				X = height - Y -1;
-				Y = tmp;
-				break;
-		}
+	switch (orientation) {
+            case PORTRAIT_FLIP:
+                X = width - X - 1;
+                Y = height - Y - 1;
+                break;
+            case LANDSCAPE_FLIP:
+                tmp = X;
+                X = Y;
+                Y = width - tmp -1;
+                break;
+            case LANDSCAPE:
+                tmp = X;
+                X = height - Y -1;
+                Y = tmp;
+                break;
+        }
     }
-	*x = X;
-	*y = Y;
-	return 1;
+    *x = X;
+    *y = Y;
+    return 1;
 }
 
 //.............LCD LED .............
