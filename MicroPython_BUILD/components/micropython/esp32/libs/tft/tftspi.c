@@ -603,8 +603,10 @@ int touch_get_data(uint8_t type)
     t.rx_buffer = (uint8_t *)&buf;
 	esp_err_t ret = spi_transfer_data_nodma(ts_spi, &t);
 	if (ret != ESP_OK) return 0;
-
-    uint16_t res = (uint16_t)(buf >> 8);
+    //The bits returning from xpr2046 are in big endian order, swap the bytes.
+    //uint16_t res = (uint16_t)(buf >> 8);
+    uint16_t res = ((buf>>16)&0xff)+(buf&0xff00);
+    res=(res>>3) & 0xfff;
 
     return res;
 }

@@ -152,7 +152,7 @@ class Calibrate:
             self.tft.setCalib(calx, caly)
             machine.nvs_setint("tpcalibX", calx)
             machine.nvs_setint("tpcalibY", caly)
-            self.tft.text(self.tft.CENTER, self.tft.LAST_Y, "Saved to NVS", self.tft.ORANGE)
+            self.tft.text(self.tft.CENTER, self.tft.LASTY, "Saved to NVS", self.tft.ORANGE)
             print("Calibration completed and saved to NVS memory.")
         else:
             print("Calibration completed.")

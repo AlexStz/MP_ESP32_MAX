@@ -1625,6 +1625,9 @@ STATIC mp_obj_t display_tft_setCalib(size_t n_args, const mp_obj_t *pos_args, mp
     }
     else self->tp_caly = args[1].u_int;
 
+    tp_calx = self->tp_calx;
+    tp_caly = self->tp_caly;
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(display_tft_setCalib_obj, 0, display_tft_setCalib);
